@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
+#include <conio.h>
 
 #define MAX_EL 100
 
@@ -9,10 +10,12 @@
 void big_sum(char *, char *, char *);
 void big_subs(char *, char *, char *);
 void big_prod(char *, char *, char *);
+void big_div(char *, char *, char *);
 
 void big_sum_simple(char *, char *, char *);
 void big_substract_simple(char *, char *, char *);
 void big_prod_simple(char *, char *, char *);
+void big_div_simple(char *, char *, char *);
 int getstrsize(char *);
 void showarray(char *, int);  
 int getnum(char);  
@@ -25,6 +28,10 @@ char comparison(char *, char *);
 void copyStr(char *, char *);
 void make_inversion(char *, char *); 
 void big_abs(char *, char *);
+void initialize_temp(char *, char *, char *);
+void clear_str(char *, int); 
+void strict_input(char *); 
+void normalize_for_output(char *);
 
 // Functions declaration - END
 
@@ -32,26 +39,36 @@ void big_abs(char *, char *);
 int main(void)
 {
 
-  char Str1[MAX_EL], Str2[MAX_EL], Result[MAX_EL] = {0}, Result1[MAX_EL] = {0}, Result2[MAX_EL] = {0};
+  char Str1[MAX_EL] = {0}, Str2[MAX_EL] = {0}, Result[MAX_EL] = {0}, Result1[MAX_EL] = {0}, Result2[MAX_EL] = {0}, Result3[MAX_EL] = {0};
   
-  printf("Enter A = "); 
-  gets(Str1);
+  printf("Enter A = ");
+  strict_input(Str1);
+ 
+  printf("Enter B = ");
+  strict_input(Str2);
   
-  printf("Enter B = "); 
-  gets(Str2);
+  big_sum(Str1, Str2, Result);
+  big_subs(Str1, Str2, Result1);
+  big_prod(Str1, Str2, Result2);
+  big_div(Str1, Str2, Result3);
 
-  big_prod(Str1, Str2, Result);
-  printf("A * B = ");
-  puts(Result);
-  
-  big_sum(Str1, Str2, Result1);
+  normalize_for_output(Result);
+  normalize_for_output(Result1);
+  normalize_for_output(Result2);
+  normalize_for_output(Result3);
+
   printf("A + B = ");
+  puts(Result);
+   
+  printf("A - B = ");
   puts(Result1);
 
-  big_subs(Str1, Str2, Result2);
-  printf("A - B = ");
+  printf("A * B = ");
   puts(Result2);
 
+  printf("A / B = ");
+  puts(Result3);
+  
   return 0;
 
 }
@@ -169,6 +186,31 @@ void big_prod(char *Str1, char *Str2, char *Result)
     big_prod_simple(absStr1, absStr2, Result);
   else {
     big_prod_simple(absStr1, absStr2, Result);
+    Result[0] = '-';
+  }
+
+}
+
+
+void big_div(char *Str1, char *Str2, char *Result)
+{
+
+  addsign(Str1);
+  addsign(Str2);
+
+  char absStr1[MAX_EL] = {0}, absStr2[MAX_EL] = {0}, zero = '0';
+  
+  big_abs(Str1, absStr1);
+  big_abs(Str2, absStr2);
+
+  if ( Str2[1] == '\0' ) {
+    Result[0] = 'x';
+    printf("Error\n"); 
+  }
+  else if ( ( (comparison(Str1, &zero) == '>') && (comparison(Str2, &zero) == '>') ) || ( (comparison(Str1, &zero) == '<') && (comparison(Str2, &zero) == '<') ) ) 
+    big_div_simple(absStr1, absStr2, Result);
+  else {
+    big_div_simple(absStr1, absStr2, Result);
     Result[0] = '-';
   }
 
@@ -327,6 +369,72 @@ void big_prod_simple(char *Str1, char *Str2, char *Result)
   }
   
   removezerob(Result);
+
+}
+
+
+void big_div_simple(char *Str1, char *Str2, char *Result)
+{
+    
+  if ( comparison(Str1, Str2) == '<' ) {
+    Result[0] = '+';
+    Result[1] = getsym(0);
+  }
+  else if ( comparison(Str1, Str2) == '=' ) {
+    Result[0] = '+'; 
+    Result[1] = getsym(1);
+  }  
+  else {
+
+    char temp_num[MAX_EL] = {0};
+    
+    initialize_temp(Str1, Str2, temp_num); 
+
+    if ( comparison(temp_num, Str2) == '<' )
+      temp_num[getstrsize(Str2)] = Str1[getstrsize(Str2)];
+
+    int current_num_of_fig = getstrsize(temp_num);
+    int j, iterations = getstrsize(Str1) - getstrsize(temp_num) + 1; 
+    int place = 1; 
+    Result[0] = '+';
+
+    for ( j = 1; j <= iterations; j++ ) {
+
+      int i = 0; 
+      char sym_i[MAX_EL] = {0}, temp_res[MAX_EL] = {0}; 
+      
+      sym_i[0] = '+';     
+
+      do {
+
+        clear_str(temp_res, getstrsize(temp_res));
+        temp_res[0] = '+';
+
+        i++;
+        
+        sym_i[1] = getsym(i); 
+        big_prod(sym_i, Str2, temp_res);
+        
+      } while ( (comparison(temp_res, temp_num) == '<') || (comparison(temp_res, temp_num) == '=') );
+
+      Result[place] = getsym(i - 1);
+
+      char temp_sub[MAX_EL] = {0}, temp_prod[MAX_EL] = {0};
+
+      sym_i[1] = getsym(i-1); 
+      big_prod(sym_i, Str2, temp_prod); 
+      big_subs(temp_num, temp_prod, temp_sub);
+
+      temp_sub[getstrsize(temp_sub)] = Str1[current_num_of_fig];
+      current_num_of_fig++;
+
+      copyStr(temp_sub, temp_num);
+
+      place++;
+
+   }    
+
+  }
 
 }
 
@@ -534,6 +642,69 @@ void big_abs(char *Str, char *absStr)
   
   copyStr(Str, absStr);   
   absStr[0] = '+';
+
+}
+
+
+void initialize_temp(char *Str1, char *Str2, char *temp) 
+{
+
+  int i; 
+
+  temp[0] = '+';
+
+  for ( i = 1; i < getstrsize(Str2); i++ ) {
+    temp[i] = Str1[i]; 
+  }
+
+}
+
+
+void clear_str(char *Str, int size_of_str)
+{
+
+  int i; 
+
+  for ( i = 0; i < size_of_str; i++ )
+    Str[i] = '\0';
+
+}
+
+
+void strict_input(char *Str)
+{
+
+  int i, num_sym = 0; 
+  char ch; 
+
+  do {
+
+    ch = getch(); 
+    num_sym = ch;
+
+    if ( (num_sym != 13) && (((num_sym >= 48) && (num_sym <= 57)) || ( (num_sym == 45)  && (i == 0) ) ) ) {
+      Str[i] = ch;
+      putchar(ch); 
+      i++;
+    }
+
+  } while ( num_sym != 13 );
+
+  printf("\n");
+
+}
+
+
+void normalize_for_output(char *Str)
+{
+
+  int i; 
+
+  if ( Str[0] == '+' ) {
+    for ( i = 1; i <= getstrsize(Str); i++ ) {
+      Str[i-1] = Str[i];
+    }
+  }
 
 }
 
